@@ -191,7 +191,7 @@ namespace Recruiter
 
 			String menuName = "recruiter_minor_faction_menu";
 			String buyName = "recruiter_minor_faction_buy_recruiter";
-			String payName = "recuirter_minor_faction_pay_menu";
+			String payName = "recruiter_minor_faction_pay_menu";
 
 			GameMenuOption.OnConditionDelegate hireRecruiterDelegate = delegate (MenuCallbackArgs args)
 			{
@@ -225,7 +225,7 @@ namespace Recruiter
 			obj.AddGameMenuOption("town_keep", buyName, "Hire a Mercenary Recruiter", hireRecruiterDelegate, hireRecruiterConsequenceDelegate, false, 4, false);
 			obj.AddGameMenuOption("castle", buyName, "Hire a Mercenary Recruiter", hireRecruiterDelegate, hireRecruiterConsequenceDelegate, false, 4, false);
 
-			obj.AddGameMenu(payName, "The Chamberlain asks you for how many denars he should buy recruits.", null, GameOverlays.MenuOverlayType.None, GameMenu.MenuFlags.none, null);
+			obj.AddGameMenu(payName, "The Chamberlain asks you for how many denars he should buy mercenary recruits.", null, GameOverlays.MenuOverlayType.None, GameMenu.MenuFlags.none, null);
 			
 			obj.AddGameMenuOption(payName, "minor_recruiter_pay_small", "Pay 500.", delegate (MenuCallbackArgs args)
 			{
@@ -317,7 +317,7 @@ namespace Recruiter
             // Token: 0x06000044 RID: 68 RVA: 0x00003500 File Offset: 0x00001700
             protected override void DefineClassTypes()
             {
-                base.AddClassDefinition(typeof(RecruiterProperties), 1);
+                base.AddClassDefinition(typeof(RecruiterProperties), 2);
             }
 
             // Token: 0x06000045 RID: 69 RVA: 0x00003515 File Offset: 0x00001715
