@@ -20,97 +20,10 @@ using TaleWorlds.SaveSystem;
 
 namespace Recruiter
 {
-    class RecruiterBehaviour : CampaignBehaviorBase
+	// Original recruiter
+    class RecruiterBehaviour : RecruiterAbstractBehaviour
     {
-		Random rand = new Random();
-		List<RecruiterProperties> recruiterProperties = new List<RecruiterProperties>();
-		private void OnSessionLaunched(CampaignGameStarter obj)
-		{
-			this.trackRecruiters();
-			try
-			{
-				this.AddRecruiterMenu(obj);
-			}
-			catch (Exception ex)
-			{
-				MessageBox.Show("Something screwed up in adding patrol menu. " + ex.ToString());
-			}
-			try
-			{
-				//this.AddPatrolDialog(obj);
-			}
-			catch (Exception ex2)
-			{
-				MessageBox.Show("Something screwed up in adding patrol dialog. " + ex2.ToString());
-			}
-		}
-
-		private void trackRecruiters()
-		{
-			foreach (PartyBase party in Hero.MainHero.OwnedParties)
-			{
-				if(party.Name.ToString().EndsWith("Recruiter"))
-				{
-					RecruiterProperties recruiterProps = recruiterProperties.FirstOrDefault(prop => prop.party == party.MobileParty);
-					if(recruiterProps== null)
-					{
-						recruiterProps = new RecruiterProperties();
-						recruiterProps.party = party.MobileParty;
-						recruiterProperties.Add(recruiterProps);
-					}
-				}
-			}
-		}
-
-		public override void RegisterEvents()
-        {
-            CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, new Action<CampaignGameStarter>(this.OnSessionLaunched));
-            CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, new Action(this.RecruiterHourlyAi));
-            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, new Action(this.OnDailyAITick));
-            CampaignEvents.OnPartyDisbandedEvent.AddNonSerializedListener(this, new Action<MobileParty>(this.DisbandPatrol));
-			CampaignEvents.MobilePartyDestroyed.AddNonSerializedListener(this, new Action<MobileParty, PartyBase>(this.RecruiterDestroyed));
-        }
-
-		private void RecruiterDestroyed(MobileParty recruiter, PartyBase arg2)
-		{
-			if (recruiter != null)
-			{
-				RecruiterProperties props = recruiterProperties.FirstOrDefault(prop => prop.party == recruiter);
-				if (props != null && recruiterProperties.Contains(props))
-				{
-					InformationManager.DisplayMessage(new InformationMessage("Your recruiter bringing recruits to " + recruiter.Name.ToString().Substring(0, recruiter.Name.ToString().Length - " Recruiter".Length) + " has been killed!", new Color(1f, 0f, 0f)));
-					recruiterProperties.Remove(props);
-					recruiter.RemoveParty();
-				}
-			}
-		}
-
-		private void DisbandPatrol(MobileParty recruiter)
-		{
-			if(recruiter != null)
-			{
-				RecruiterProperties props = recruiterProperties.FirstOrDefault(prop => prop.party == recruiter);
-				if (props != null && recruiterProperties.Contains(props))
-				{
-					recruiterProperties.Remove(props);
-					recruiter.RemoveParty();
-				}
-			}
-		}
-
-		private void OnDailyAITick()
-		{
-			foreach (RecruiterProperties prop in recruiterProperties)
-			{
-				if (prop.party.Food <= 3f)
-			{
-					this.generateFood(prop.party);
-				}
-			}
-
-		}
-
-		private void RecruiterHourlyAi()
+	    protected override void RecruiterHourlyAi()
 		{
 			List<RecruiterProperties> toBeDeleted = new List<RecruiterProperties>();
 
@@ -301,46 +214,6 @@ namespace Recruiter
 			}
 		}
 
-		private bool hasSufficientRelationsship(Hero notable, int index)
-		{
-			switch (index)
-			{
-				case 0: return true; //TODO: Check
-				case 1:
-					return notable.GetRelationWithPlayer() >= 0;
-				case 2:
-					return notable.GetRelationWithPlayer() >= 0;
-				case 3:
-					return notable.GetRelationWithPlayer() >= 5;
-				case 4:
-					return notable.GetRelationWithPlayer() >= 10;
-				case 5:
-					return notable.GetRelationWithPlayer() >= 20;
-				default:
-					return false;
-			}
-		}
-
-		public override void SyncData(IDataStore dataStore)
-        {
-			//List<MobileParty> allRecruitersLegacy = new List<MobileParty>();
-			//dataStore.SyncData<List<MobileParty>>("allRecruiters", ref allRecruitersLegacy);
-			//dataStore.SyncData<Dictionary<MobileParty, RecruiterProperties>>("allRecruitersToProperties", ref allRecruitersToProperties);
-
-			//foreach (MobileParty recruiter in allRecruitersLegacy)
-			//{
-			//	if(!allRecruitersToProperties.ContainsKey(recruiter))
-			//	{
-			//		allRecruitersToProperties.Add(recruiter, new RecruiterProperties());
-			//	}
-			//}
-			//dataStore.SyncData<List<RecruiterProperties>>("recruiterProperties", ref recruiterProperties);
-			//if(recruiterProperties == null)
-			//{
-			//	recruiterProperties = new List<RecruiterProperties>();
-			//}
-        }
-
 		public List<CultureObject> getPossibleCultures()
 		{
 			IEnumerable<Settlement> settlements = Settlement.All;
@@ -356,7 +229,7 @@ namespace Recruiter
 			return returnList;
 		}
 
-		public void AddRecruiterMenu(CampaignGameStarter obj)
+		public override void AddRecruiterMenu(CampaignGameStarter obj)
 		{
 			GameMenuOption.OnConditionDelegate hireRecruiterDelegate = delegate (MenuCallbackArgs args)
 			{
@@ -452,12 +325,7 @@ namespace Recruiter
 			obj.AddGameMenuOption("recruiter_pay_menu", "recruiter_leave", "Leave", new GameMenuOption.OnConditionDelegate(this.game_menu_just_add_leave_conditional), new GameMenuOption.OnConsequenceDelegate(this.game_menu_switch_to_village_menu), false, -1, false);
 		}
 
-		private void game_menu_switch_to_village_menu(MenuCallbackArgs args)
-		{
-			GameMenu.SwitchToMenu("castle");
-		}
-
-		public MobileParty spawnRecruiter(Settlement settlement, int cash, RecruiterProperties props)
+		public override MobileParty spawnRecruiter(Settlement settlement, int cash, RecruiterProperties props)
 		{
 			PartyTemplateObject defaultPartyTemplate = settlement.Culture.DefaultPartyTemplate;
 			int numberOfCreated = defaultPartyTemplate.NumberOfCreated;
@@ -474,39 +342,7 @@ namespace Recruiter
 			mobileParty.SetMoveGoToSettlement(findNearestSettlementWithRecruitableRecruits(mobileParty));
 			return mobileParty;
 		}
-
-		public void InitRecruiterParty(MobileParty recruiter, TextObject name, Clan faction, Settlement homeSettlement)
-		{
-			recruiter.Name = name;
-			recruiter.IsMilitia = true;
-			recruiter.HomeSettlement = homeSettlement;
-			recruiter.Party.Owner = faction.Leader;
-			recruiter.SetInititave(0f, 1f, 1E+08f);
-			recruiter.Party.Visuals.SetMapIconAsDirty();
-			generateFood(recruiter);
-		}
-		public void generateFood(MobileParty recruiter)
-		{
-			foreach (ItemObject itemObject in ItemObject.All)
-			{
-				bool isFood = itemObject.IsFood;
-				if (isFood)
-				{
-					int num = MBRandom.RoundRandomized((float)recruiter.MemberRoster.TotalManCount * (1f / (float)itemObject.Value) * 1f * MBRandom.RandomFloat * MBRandom.RandomFloat * MBRandom.RandomFloat * MBRandom.RandomFloat);
-					bool flag = num > 0;
-					if (flag)
-					{
-						recruiter.ItemRoster.AddToCounts(itemObject, num, true);
-					}
-				}
-			}
-		}
-		private bool game_menu_just_add_leave_conditional(MenuCallbackArgs args)
-		{
-			args.optionLeaveType = GameMenuOption.LeaveType.Leave;
-			return true;
-		}
-
+		
 		public class BannerlordRecruiterSaveDefiner : SaveableTypeDefiner
 		{
 			// Token: 0x06000043 RID: 67 RVA: 0x000034F1 File Offset: 0x000016F1

@@ -19,6 +19,7 @@ namespace Recruiter
 				try
 				{
 					campaignGameStarter.AddBehavior(new RecruiterBehaviour());
+					campaignGameStarter.AddBehavior(new MinorFactionRecruiterBehaviour());
 					gameStarterObject.AddModel(new RecruiterSizeModel());
 				}
 				catch (Exception ex)

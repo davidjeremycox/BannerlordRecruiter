@@ -8,15 +8,24 @@ using TaleWorlds.SaveSystem;
 
 namespace Recruiter
 {
-    class RecruiterProperties
+    public class RecruiterProperties
     {
         [SaveableField(1)]
         private MobileParty _party;
 
         [SaveableField(2)]
         private CultureObject _searchCulture;
+
+        [SaveableField(3)] private String _minorFactionName;
+        
         public MobileParty party {
             get { return _party; } set { _party = value; } }
         public CultureObject SearchCulture { get { return _searchCulture; } set { _searchCulture = value; } }
+        
+        public String MinorFactionName
+        {
+            get { return _minorFactionName; }
+            set { _minorFactionName = value;  }
+        }
     }
 }
