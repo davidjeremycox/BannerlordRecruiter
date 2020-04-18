@@ -44,8 +44,13 @@ namespace Recruiter
 	    private const String karakhuzaits = "Karakhuzait";
 	    private const String forestPeople = "Forest People";
 	    private const String eleftheroi = "Eleftheroi";
+	    // Special Nobles -- Custom Units
+	    private const String desertNobles = "Desert Tribes";
 
+	    // Variables
 	    private const int costPerTransform = 200;
+	    private const int nobleCostPerTransform = 300;
+	    private const int maxPerDay = 5;
         protected override void RecruiterHourlyAi()
         {
 	        return;
@@ -122,7 +127,6 @@ namespace Recruiter
         private int recruitMercenaries(RecruiterProperties prop, MobileParty recruiter, Settlement currentSettlment)
         {
 	        MobileParty garrison = GetGarrison(currentSettlment);
-	        int maxPerDay = 5;
 	        int numToRecruit = maxPerDay;
 
 	        foreach (TroopRosterElement rosterElement in garrison.MemberRoster)
@@ -186,32 +190,90 @@ namespace Recruiter
 	        String minorFaction = prop.MinorFactionName;
 	        switch (minorFaction)
 	        {
-		        case beniZilal:
-			        return MBObjectManager.Instance.GetObject<CharacterObject>("beni_zilal_tier_1");
+		        case ghilman:
+			        return MBObjectManager.Instance.GetObject<CharacterObject>("ghilman_tier_1");
+		        case legionOfTheBetrayed:
+			        return MBObjectManager.Instance.GetObject<CharacterObject>("legion_of_the_betrayed_tier_1");
 		        case skolder:
 			        return MBObjectManager.Instance.GetObject<CharacterObject>("skolderbrotva_tier_1");
+		        case boar:
+			        return MBObjectManager.Instance.GetObject<CharacterObject>("company_of_the_boar_tier_1");
+		        case beniZilal:
+			        return MBObjectManager.Instance.GetObject<CharacterObject>("beni_zilal_tier_1");
+		        case wolfskins:
+			        return MBObjectManager.Instance.GetObject<CharacterObject>("wolfskins_tier_1");
+		        case hiddenHand:
+			        return MBObjectManager.Instance.GetObject<CharacterObject>("hidden_hand_tier_1");
+		        case lakeRat:
+			        return MBObjectManager.Instance.GetObject<CharacterObject>("lakepike_tier_1");
+		        case brotherhoodOfWoods:
+			        return MBObjectManager.Instance.GetObject<CharacterObject>("brotherhood_of_woods_tier_1");
+		        case embersOfFlame:
+			        return MBObjectManager.Instance.GetObject<CharacterObject>("embers_of_flame_tier_1");
+		        case jawwal:
+			        return MBObjectManager.Instance.GetObject<CharacterObject>("jawwal_tier_1");
+		        case karakhuzaits:
+			        return MBObjectManager.Instance.GetObject<CharacterObject>("karakhuzaits_tier_1");
+		        case forestPeople:
+			        return MBObjectManager.Instance.GetObject<CharacterObject>("forest_people_tier_1");
+		        case eleftheroi:
+			        return MBObjectManager.Instance.GetObject<CharacterObject>("eleftheroi_tier_1");
+		        case desertNobles:
+			        return MBObjectManager.Instance.GetObject<CharacterObject>("desert_noble_tier_0");
+
 	        }
 	        throw new Exception("Failed to find the recruit character for " + minorFaction);
         }
 
+        private bool isNoble(String minorFactionName)
+        {
+	        return minorFactionName == desertNobles;
+        }
         private bool IsEligible(RecruiterProperties prop, CharacterObject rosterElementCharacter)
         {
+	        if (isNoble(prop.MinorFactionName))
+	        {
+		        // Nobles have a noble tier troop.
+		        return rosterElementCharacter == rosterElementCharacter.Culture.EliteBasicTroop;
+	        }
 	        // For now we allow any recruit to be transformed into any Minor Faction recruit
 	        return rosterElementCharacter == rosterElementCharacter.Culture.BasicTroop;
         }
         
         private int GetTransformCost(RecruiterProperties prop, int numRecruited)
         {
-	        // For now flat
+	        // Nobles are nobleman
+	        if (isNoble(prop.MinorFactionName))
+	        {
+		        return nobleCostPerTransform * numRecruited;
+	        }
+	        // Flat for other recruits
 	        return costPerTransform * numRecruited;
         }
 
         private List<String> getPossibleMinorFactions()
         {
 	        List<String> returnList = new List<String>();
-
-	        returnList.Add(beniZilal);
+	        
+	        returnList.Add(ghilman);
+	        returnList.Add(legionOfTheBetrayed);
 	        returnList.Add(skolder);
+	        returnList.Add(boar);
+	        returnList.Add(wolfskins);
+	        returnList.Add(hiddenHand);
+	        returnList.Add(lakeRat);
+	        returnList.Add(brotherhoodOfWoods);
+	        returnList.Add(embersOfFlame);
+	        returnList.Add(jawwal);
+	        returnList.Add(karakhuzaits);
+	        returnList.Add(forestPeople);
+	        returnList.Add(eleftheroi);
+	        returnList.Add(beniZilal);
+	        if (MBObjectManager.Instance.GetObject<CharacterObject>("desert_noble_tier_0") != null)
+	        {
+		        // This uses a modded troop so only include if the modded troop is available.
+		        returnList.Add(desertNobles);
+	        }
 	        
 	        return returnList;
         }
