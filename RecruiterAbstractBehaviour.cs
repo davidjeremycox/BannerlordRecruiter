@@ -99,19 +99,7 @@ namespace Recruiter
                 }
             }
         }
-        
-        private void OnDailyAITick()
-        {
-            foreach (RecruiterProperties prop in recruiterProperties)
-            {
-                if (prop.party.Food <= 3f)
-                {
-                    this.generateFood(prop.party);
-                }
-            }
 
-        }
-        
         protected void game_menu_switch_to_village_menu(MenuCallbackArgs args)
         {
             GameMenu.SwitchToMenu("castle");
@@ -191,6 +179,7 @@ namespace Recruiter
             }
         }
         
+        public abstract void OnDailyAITick();
         protected abstract void RecruiterHourlyAi();
         public abstract void AddRecruiterMenu(CampaignGameStarter obj);
 

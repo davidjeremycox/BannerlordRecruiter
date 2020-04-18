@@ -23,6 +23,19 @@ namespace Recruiter
 	// Original recruiter
     class RecruiterBehaviour : RecruiterAbstractBehaviour
     {
+	    
+	    public override void OnDailyAITick()
+	    {
+		    foreach (RecruiterProperties prop in recruiterProperties)
+		    {
+			    if (prop.party.Food <= 3f)
+			    {
+				    this.generateFood(prop.party);
+			    }
+		    }
+
+	    }
+	    
 	    protected override void RecruiterHourlyAi()
 		{
 			List<RecruiterProperties> toBeDeleted = new List<RecruiterProperties>();

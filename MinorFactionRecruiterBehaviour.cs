@@ -26,12 +26,42 @@ namespace Recruiter
     class MinorFactionRecruiterBehaviour : RecruiterAbstractBehaviour
     {
 	    // Minor Factions
-	    const String beniZilal = "Beni Zilal";
-	    const String skolder = "Skolderbrotva";
+	    private const String ghilman = "Ghilman";
+	    // In the files but haven't seen them
+	    //private const String galloglass = "";
+	    private const String legionOfTheBetrayed = "Legion of the Betrayed";
+	    private const String skolder = "Skolderbrotva";
+	    private const String boar = "Company of the Boar";
+	    private const String beniZilal = "Beni Zilal";
+	    private const String wolfskins = "Wolfskins";
+	    private const String hiddenHand = "Hidden Hand";
+	    private const String lakeRat = "Lake Rats";
+	    private const String brotherhoodOfWoods = "Brotherhood of the Woods";
+	    // In the files but haven't seen them
+	    //private const String guardians = "";
+	    private const String embersOfFlame = "Embers of the Flame";
+	    private const String jawwal = "Jawwal";
+	    private const String karakhuzaits = "Karakhuzait";
+	    private const String forestPeople = "Forest People";
+	    private const String eleftheroi = "Eleftheroi";
+
 	    private const int costPerTransform = 200;
         protected override void RecruiterHourlyAi()
         {
-            List<RecruiterProperties> toBeDeleted = new List<RecruiterProperties>();
+	        return;
+        }
+
+        public override void OnDailyAITick()
+        {
+	        foreach (RecruiterProperties prop in recruiterProperties)
+	        {
+		        if (prop.party.Food <= 3f)
+		        {
+			        this.generateFood(prop.party);
+		        }
+	        }
+
+	        List<RecruiterProperties> toBeDeleted = new List<RecruiterProperties>();
 
             foreach (RecruiterProperties prop in recruiterProperties)
             {
@@ -64,7 +94,7 @@ namespace Recruiter
 			                int healthy = rosterElement.Number - rosterElement.WoundedNumber;
 			                garrison.MemberRoster.AddToCounts(rosterElement.Character, healthy, false, rosterElement.WoundedNumber);
 		                }
-		                InformationManager.DisplayMessage(new InformationMessage("Your mercenary recruiter brought " + soldierCount + " soldiers to " + recruiter.HomeSettlement + ".", new Color(0f, 1f, 0f)));
+		                InformationManager.DisplayMessage(new InformationMessage("Your mercenary recruiter brought " + (soldierCount - 1) + " soldiers to " + recruiter.HomeSettlement + ".", new Color(0f, 1f, 0f)));
 		                toBeDeleted.Add(prop);
 		                recruiter.RemoveParty();
 	                }
@@ -76,7 +106,7 @@ namespace Recruiter
 	            recruiterProperties.Remove(prop);
             }
         }
-
+        
         private MobileParty GetGarrison(Settlement settlement)
         {
 	        foreach (MobileParty party in settlement.Parties)
