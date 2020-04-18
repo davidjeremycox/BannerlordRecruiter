@@ -307,6 +307,7 @@ namespace Recruiter
 	        return mobileParty;
         }
         
+        /*
         public class BannerlordMinorFactionRecruiterSaveDefiner : SaveableTypeDefiner
         {
             // Token: 0x06000043 RID: 67 RVA: 0x000034F1 File Offset: 0x000016F1
@@ -326,6 +327,7 @@ namespace Recruiter
                 base.ConstructContainerDefinition(typeof(List<RecruiterProperties>));
             }
         }
+        */
     }
     
     
