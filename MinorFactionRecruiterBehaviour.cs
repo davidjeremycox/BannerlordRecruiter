@@ -217,7 +217,7 @@ namespace Recruiter
 				{
 					props = new RecruiterProperties();
 					props.MinorFactionName = minorFactionName;
-					GameMenu.SwitchToMenu(buyName);
+					GameMenu.SwitchToMenu(payName);
 				});
 
 			}
@@ -307,27 +307,25 @@ namespace Recruiter
 	        return mobileParty;
         }
         
-        /*
-        public class BannerlordMinorFactionRecruiterSaveDefiner : SaveableTypeDefiner
-        {
-            // Token: 0x06000043 RID: 67 RVA: 0x000034F1 File Offset: 0x000016F1
-            public BannerlordMinorFactionRecruiterSaveDefiner() : base(91215130)
-            {
-            }
+         public class BannerlordMinorFactionRecruiterSaveDefiner : SaveableTypeDefiner
+         {
+             // Token: 0x06000043 RID: 67 RVA: 0x000034F1 File Offset: 0x000016F1
+             public BannerlordMinorFactionRecruiterSaveDefiner() : base(91215130)
+             {
+             }
 
-            // Token: 0x06000044 RID: 68 RVA: 0x00003500 File Offset: 0x00001700
-            protected override void DefineClassTypes()
-            {
-                base.AddClassDefinition(typeof(RecruiterProperties), 2);
-            }
+             // Token: 0x06000044 RID: 68 RVA: 0x00003500 File Offset: 0x00001700
+             // protected override void DefineClassTypes()
+             // {
+             //     base.AddClassDefinition(typeof(RecruiterProperties), 2);
+             // }
 
-            // Token: 0x06000045 RID: 69 RVA: 0x00003515 File Offset: 0x00001715
-            protected override void DefineContainerDefinitions()
-            {
-                base.ConstructContainerDefinition(typeof(List<RecruiterProperties>));
-            }
-        }
-        */
+             // Token: 0x06000045 RID: 69 RVA: 0x00003515 File Offset: 0x00001715
+             // protected override void DefineContainerDefinitions()
+             // {
+             //     base.ConstructContainerDefinition(typeof(List<RecruiterProperties>));
+             // }
+         }
     }
     
     
