@@ -57,21 +57,11 @@ namespace Recruiter
 
 	    private List<CharacterObject> hardCodedEliteTroops = null;
 	    
-	    // Debug
-	    private const bool debugMode = true;
         protected override void RecruiterHourlyAi()
         {
 	        return;
         }
 
-        private void debug(String logString)
-        {
-	        if (debugMode)
-	        {
-		        InformationManager.DisplayMessage(new InformationMessage(logString, new Color(1f, 0f, 0f)));
-	        }
-        }
-        
         private void debugSummarizeState()
         {
 	        // Need to debug in combination with harmony enabled modules that prevent attaching a debugger

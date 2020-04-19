@@ -26,7 +26,9 @@ namespace Recruiter
     {
         protected Random rand = new Random();
         protected List<RecruiterProperties> recruiterProperties = new List<RecruiterProperties>();
-        protected bool DialogInitialized = false;
+        // Debug
+        protected const bool debugMode = true;
+
         private void OnSessionLaunched(CampaignGameStarter obj)
         {
             this.trackRecruiters();
@@ -48,6 +50,13 @@ namespace Recruiter
             }
         }
 
+        protected void debug(String logString)
+        {
+            if (debugMode)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(logString, new Color(1f, 0f, 0f)));
+            }
+        }
         #region PatrolDialogMethods
 	    
         protected void conversation_patrol_disband_now_on_consquence()
