@@ -26,6 +26,7 @@ namespace Recruiter
     {
         protected Random rand = new Random();
         protected List<RecruiterProperties> recruiterProperties = new List<RecruiterProperties>();
+        protected bool DialogInitialized = false;
         private void OnSessionLaunched(CampaignGameStarter obj)
         {
             this.trackRecruiters();
@@ -46,32 +47,22 @@ namespace Recruiter
                 MessageBox.Show("Something screwed up in adding patrol dialog. " + ex2.ToString());
             }
         }
-        
-        public void AddPatrolDialog(CampaignGameStarter obj)
-        {
-            obj.AddDialogLine("mod_recruiter_talk_start", "start", "mod_recruiter_talk", "Hello my lord. What do you need us to do?", new ConversationSentence.OnConditionDelegate(this.patrol_talk_start_on_conditional), null, 100, null);
-            obj.AddPlayerLine("mod_recruiter_donate_troops", "mod_recruiter_talk", "mod_recruiter_after_donate", "Donate Troops", null, new ConversationSentence.OnConsequenceDelegate(this.conversation_patrol_donate_troops_on_consequence), 100, null, null);
-            obj.AddPlayerLine("mod_recruiter_disband", "mod_recruiter_talk", "close_window", "Disband.", null, new ConversationSentence.OnConsequenceDelegate(this.conversation_patrol_disband_on_consequence), 100, null, null);
-            obj.AddPlayerLine("mod_recruiter_leave", "mod_recruiter_talk", "close_window", "Carry on, then. Farewell.", null, new ConversationSentence.OnConsequenceDelegate(this.conversation_patrol_leave_on_consequence), 100, null, null);
-            obj.AddDialogLine("mod_recruiter_after_donate", "mod_recruiter_after_donate", "mod_recruiter_talk", "Anything else?", null, null, 100, null);
-            //obj.AddPlayerLine("mod_leaderless_party_answer", "disbanding_leaderless_party_start_response", "close_window", "Disband now.", null, new ConversationSentence.OnConsequenceDelegate(this.conversation_patrol_disband_now_on_consquence), 100, null, null);
-        }
-        
+
         #region PatrolDialogMethods
 	    
-        private void conversation_patrol_disband_now_on_consquence()
+        protected void conversation_patrol_disband_now_on_consquence()
         {
             PartyBase encounteredParty = PlayerEncounter.EncounteredParty;
             encounteredParty.MobileParty.RemoveParty();
             PlayerEncounter.LeaveEncounter = true;
         }
 
-        private void conversation_patrol_leave_on_consequence()
+        protected void conversation_patrol_leave_on_consequence()
         {
             PlayerEncounter.LeaveEncounter = true;
         }
 
-        private void conversation_patrol_disband_on_consequence()
+        protected void conversation_patrol_disband_on_consequence()
         {
             PartyBase encounteredParty = PlayerEncounter.EncounteredParty;
             RecruiterProperties props = recruiterProperties.FirstOrDefault(prop => prop.party == encounteredParty.MobileParty);
@@ -84,35 +75,13 @@ namespace Recruiter
             }
         }
 
-        private void conversation_patrol_donate_troops_on_consequence()
+        protected void conversation_patrol_donate_troops_on_consequence()
         {
             PartyBase encounteredParty = PlayerEncounter.EncounteredParty;
             PartyScreenManager.OpenScreenAsDonateTroops(encounteredParty.MobileParty);
         }
 
-        private bool patrol_talk_start_on_conditional()
-        {
-            PartyBase encounteredParty = PlayerEncounter.EncounteredParty;
-            bool result;
-            try
-            {
-                bool flag = PlayerEncounter.Current != null && Campaign.Current.CurrentConversationContext == ConversationContext.PartyEncounter && encounteredParty.IsMobile && encounteredParty.Name.Contains("Recruiter") && encounteredParty.IsActive && encounteredParty.MobileParty.HomeSettlement.OwnerClan == Clan.PlayerClan;
-                if (flag)
-                {
-                    result = true;
-                }
-                else
-                {
-                    result = false;
-                }
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show(e.ToString());
-                result = false;
-            }
-            return result;
-        }
+        
 
         #endregion
 
@@ -251,6 +220,8 @@ namespace Recruiter
         public abstract void OnDailyAITick();
         protected abstract void RecruiterHourlyAi();
         public abstract void AddRecruiterMenu(CampaignGameStarter obj);
+        public abstract void AddPatrolDialog(CampaignGameStarter obj);
+        protected abstract bool patrol_talk_start_on_conditional();
 
         public abstract MobileParty spawnRecruiter(Settlement settlement, int cash, RecruiterProperties props);
     }
