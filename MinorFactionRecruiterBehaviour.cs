@@ -86,6 +86,38 @@ namespace Recruiter
 	        }
         }
 
+        public override void AddPatrolDialog(CampaignGameStarter obj)
+        {
+	        obj.AddDialogLine("mod_merc_recruiter_talk_start", "start", "mod_merc_recruiter_talk", "Hello my lord. What do you need us to do?", new ConversationSentence.OnConditionDelegate(this.patrol_talk_start_on_conditional), null, 100, null);
+	        obj.AddPlayerLine("mod_merc_recruiter_donate_troops", "mod_merc_recruiter_talk", "mod_merc_recruiter_after_donate", "Donate Troops", null, new ConversationSentence.OnConsequenceDelegate(this.conversation_patrol_donate_troops_on_consequence), 100, null, null);
+	        obj.AddPlayerLine("mod_merc_recruiter_disband", "mod_merc_recruiter_talk", "close_window", "Disband.", null, new ConversationSentence.OnConsequenceDelegate(this.conversation_patrol_disband_on_consequence), 100, null, null);
+	        obj.AddPlayerLine("mod_merc_recruiter_leave", "mod_merc_recruiter_talk", "close_window", "Carry on, then. Farewell.", null, new ConversationSentence.OnConsequenceDelegate(this.conversation_patrol_leave_on_consequence), 100, null, null);
+	        obj.AddDialogLine("mod_merc_recruiter_after_donate", "mod_merc_recruiter_after_donate", "mod_merc_recruiter_talk", "Anything else?", null, null, 100, null);
+	        //obj.AddPlayerLine("mod_leaderless_party_answer", "disbanding_leaderless_party_start_response", "close_window", "Disband now.", null, new ConversationSentence.OnConsequenceDelegate(this.conversation_patrol_disband_now_on_consquence), 100, null, null);
+        }
+        protected override bool patrol_talk_start_on_conditional()
+        {
+	        PartyBase encounteredParty = PlayerEncounter.EncounteredParty;
+	        bool result;
+	        try
+	        {
+		        bool flag = PlayerEncounter.Current != null && Campaign.Current.CurrentConversationContext == ConversationContext.PartyEncounter && encounteredParty.IsMobile && encounteredParty.Name.Contains("Mercenary Recruiter") && encounteredParty.IsActive && encounteredParty.MobileParty.HomeSettlement.OwnerClan == Clan.PlayerClan;
+		        if (flag)
+		        {
+			        result = true;
+		        }
+		        else
+		        {
+			        result = false;
+		        }
+	        }
+	        catch (Exception e)
+	        {
+		        MessageBox.Show(e.ToString());
+		        result = false;
+	        }
+	        return result;
+        }
         public override void OnDailyAITick()
         {
 	        debugSummarizeState();

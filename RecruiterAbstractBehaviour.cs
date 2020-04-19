@@ -26,6 +26,7 @@ namespace Recruiter
     {
         protected Random rand = new Random();
         protected List<RecruiterProperties> recruiterProperties = new List<RecruiterProperties>();
+        protected bool DialogInitialized = false;
         private void OnSessionLaunched(CampaignGameStarter obj)
         {
             this.trackRecruiters();
@@ -39,14 +40,51 @@ namespace Recruiter
             }
             try
             {
-                //this.AddPatrolDialog(obj);
+                this.AddPatrolDialog(obj);
             }
             catch (Exception ex2)
             {
                 MessageBox.Show("Something screwed up in adding patrol dialog. " + ex2.ToString());
             }
         }
+
+        #region PatrolDialogMethods
+	    
+        protected void conversation_patrol_disband_now_on_consquence()
+        {
+            PartyBase encounteredParty = PlayerEncounter.EncounteredParty;
+            encounteredParty.MobileParty.RemoveParty();
+            PlayerEncounter.LeaveEncounter = true;
+        }
+
+        protected void conversation_patrol_leave_on_consequence()
+        {
+            PlayerEncounter.LeaveEncounter = true;
+        }
+
+        protected void conversation_patrol_disband_on_consequence()
+        {
+            PartyBase encounteredParty = PlayerEncounter.EncounteredParty;
+            RecruiterProperties props = recruiterProperties.FirstOrDefault(prop => prop.party == encounteredParty.MobileParty);
+
+            if(props != null)
+            {
+                recruiterProperties.Remove(props);
+                encounteredParty.MobileParty.RemoveParty();
+                PlayerEncounter.LeaveEncounter = true;
+            }
+        }
+
+        protected void conversation_patrol_donate_troops_on_consequence()
+        {
+            PartyBase encounteredParty = PlayerEncounter.EncounteredParty;
+            PartyScreenManager.OpenScreenAsDonateTroops(encounteredParty.MobileParty);
+        }
+
         
+
+        #endregion
+
         private void trackRecruiters()
         {
             foreach (PartyBase party in Hero.MainHero.OwnedParties)
@@ -182,6 +220,8 @@ namespace Recruiter
         public abstract void OnDailyAITick();
         protected abstract void RecruiterHourlyAi();
         public abstract void AddRecruiterMenu(CampaignGameStarter obj);
+        public abstract void AddPatrolDialog(CampaignGameStarter obj);
+        protected abstract bool patrol_talk_start_on_conditional();
 
         public abstract MobileParty spawnRecruiter(Settlement settlement, int cash, RecruiterProperties props);
     }
