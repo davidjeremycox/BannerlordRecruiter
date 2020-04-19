@@ -48,14 +48,37 @@ namespace Recruiter
             {
                 MessageBox.Show("Something screwed up in adding patrol dialog. " + ex2.ToString());
             }
+
+            this.PurgeRecruiterList();
+        }
+
+        private void PurgeRecruiterList()
+        {
+            List<RecruiterProperties> toBeDeleted = new List<RecruiterProperties>();
+            foreach (RecruiterProperties prop in recruiterProperties)
+            {
+                if (!RecruiterPreserveType(prop))
+                {
+                    toBeDeleted.Add(prop);
+                }
+            }
+            foreach (RecruiterProperties prop in toBeDeleted)
+            {
+                recruiterProperties.Remove(prop);
+            }
+        }
+
+        protected void debug(String logString, Color messageColor)
+        {
+            if (debugMode)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(logString, messageColor));
+            }
         }
 
         protected void debug(String logString)
         {
-            if (debugMode)
-            {
-                InformationManager.DisplayMessage(new InformationMessage(logString, new Color(1f, 0f, 0f)));
-            }
+            debug(logString, new Color(1f, 0f, 0f));
         }
         #region PatrolDialogMethods
 	    
@@ -165,11 +188,11 @@ namespace Recruiter
             //		allRecruitersToProperties.Add(recruiter, new RecruiterProperties());
             //	}
             //}
-            //dataStore.SyncData<List<RecruiterProperties>>("recruiterProperties", ref recruiterProperties);
-            //if(recruiterProperties == null)
-            //{
-            //	recruiterProperties = new List<RecruiterProperties>();
-            //}
+            dataStore.SyncData<List<RecruiterProperties>>(this.GetSaveKey(), ref recruiterProperties);
+            if(recruiterProperties == null)
+            {
+            	recruiterProperties = new List<RecruiterProperties>();
+            }
         }
 
         public void InitRecruiterParty(MobileParty recruiter, TextObject name, Clan faction, Settlement homeSettlement)
@@ -231,6 +254,8 @@ namespace Recruiter
         public abstract void AddRecruiterMenu(CampaignGameStarter obj);
         public abstract void AddPatrolDialog(CampaignGameStarter obj);
         protected abstract bool patrol_talk_start_on_conditional();
+        protected abstract String GetSaveKey();
+        protected abstract bool RecruiterPreserveType(RecruiterProperties prop);
 
         public abstract MobileParty spawnRecruiter(Settlement settlement, int cash, RecruiterProperties props);
     }

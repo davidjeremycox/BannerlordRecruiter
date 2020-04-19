@@ -23,8 +23,10 @@ namespace Recruiter
 	// Original recruiter
     class RecruiterBehaviour : RecruiterAbstractBehaviour
     {
+	    private Color MessageColor = new Color(1f, 1f, 0f);
 	    public override void OnDailyAITick()
-		{
+	    {
+		    DebugSummarizeState();
 			foreach (RecruiterProperties prop in recruiterProperties)
 			{
 				if (prop.party.Food <= 3f)
@@ -34,6 +36,19 @@ namespace Recruiter
 			}
 		}
 	    
+	    private void DebugSummarizeState()
+	    {
+		    // Need to debug in combination with harmony enabled modules that prevent attaching a debugger
+		    debug("There are " + recruiterProperties.Count() + " tracked culture recruiters", MessageColor);
+		    int index = 0;
+		    foreach (RecruiterProperties prop in recruiterProperties)
+		    {
+			    debug("Recruiter " + index + " recruits " + prop.SearchCulture + " and has " + prop.party.PartyTradeGold + " gold", MessageColor);
+			    debug("His home settlement is " + prop.party.HomeSettlement.Name + ". His minor faction name is " + prop.MinorFactionName, MessageColor);
+			    debug("His food is " + prop.party.Food, MessageColor);
+			    index += 1;
+		    }
+	    }
 	    public override void AddPatrolDialog(CampaignGameStarter obj)
 	    {
 		    obj.AddDialogLine("mod_recruiter_talk_start", "start", "mod_recruiter_talk", "Hello my lord. What do you need us to do?", new ConversationSentence.OnConditionDelegate(this.patrol_talk_start_on_conditional), null, 100, null);
@@ -259,24 +274,33 @@ namespace Recruiter
 			}
 		}
 		
-		public override void SyncData(IDataStore dataStore)
+		// public override void SyncData(IDataStore dataStore)
+		// {
+		// 	//List<MobileParty> allRecruitersLegacy = new List<MobileParty>();
+		// 	//dataStore.SyncData<List<MobileParty>>("allRecruiters", ref allRecruitersLegacy);
+		// 	//dataStore.SyncData<Dictionary<MobileParty, RecruiterProperties>>("allRecruitersToProperties", ref allRecruitersToProperties);
+		//
+		// 	//foreach (MobileParty recruiter in allRecruitersLegacy)
+		// 	//{
+		// 	//	if(!allRecruitersToProperties.ContainsKey(recruiter))
+		// 	//	{
+		// 	//		allRecruitersToProperties.Add(recruiter, new RecruiterProperties());
+		// 	//	}
+		// 	//}
+		// 	dataStore.SyncData<List<RecruiterProperties>>("recruiterProperties", ref recruiterProperties);
+		// 	if(recruiterProperties == null)
+		// 	{
+		// 		recruiterProperties = new List<RecruiterProperties>();
+		// 	}
+		// }
+		protected override string GetSaveKey()
 		{
-			//List<MobileParty> allRecruitersLegacy = new List<MobileParty>();
-			//dataStore.SyncData<List<MobileParty>>("allRecruiters", ref allRecruitersLegacy);
-			//dataStore.SyncData<Dictionary<MobileParty, RecruiterProperties>>("allRecruitersToProperties", ref allRecruitersToProperties);
+			return  "recruiterProperties";
+		}
 
-			//foreach (MobileParty recruiter in allRecruitersLegacy)
-			//{
-			//	if(!allRecruitersToProperties.ContainsKey(recruiter))
-			//	{
-			//		allRecruitersToProperties.Add(recruiter, new RecruiterProperties());
-			//	}
-			//}
-			dataStore.SyncData<List<RecruiterProperties>>("recruiterProperties", ref recruiterProperties);
-			if(recruiterProperties == null)
-			{
-				recruiterProperties = new List<RecruiterProperties>();
-			}
+		protected override bool RecruiterPreserveType(RecruiterProperties prop)
+		{
+			return prop.IsCultureRecruiter();
 		}
 
 		public List<CultureObject> getPossibleCultures()
