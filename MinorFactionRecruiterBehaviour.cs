@@ -60,21 +60,15 @@ namespace Recruiter
 
 	    private List<CharacterObject> hardCodedEliteTroops = null;
 	    
-	    // Debug
-	    private const bool debugMode = true;
         protected override void RecruiterHourlyAi()
         {
 	        return;
         }
 
-        private void debug(String logString)
+        protected override string GetSaveKey()
         {
-	        if (debugMode)
-	        {
-		        InformationManager.DisplayMessage(new InformationMessage(logString, new Color(1f, 0f, 0f)));
-	        }
+	        return  "mercenaryRecruiterProperties";
         }
-        
         private void debugSummarizeState()
         {
 	        // Need to debug in combination with harmony enabled modules that prevent attaching a debugger
@@ -83,7 +77,7 @@ namespace Recruiter
 	        foreach (RecruiterProperties prop in recruiterProperties)
 	        {
 		        debug("Recruiter " + index + " recruits " + prop.MinorFactionName + " and has " + prop.party.PartyTradeGold + " gold");
-		        debug("His home settlement is " + prop.party.HomeSettlement.Name);
+		        debug("His home settlement is " + prop.party.HomeSettlement.Name + ". His search culture is " + prop.SearchCulture);
 		        debug("His food is " + prop.party.Food);
 		        index += 1;
 	        }
@@ -136,6 +130,8 @@ namespace Recruiter
 
             foreach (RecruiterProperties prop in recruiterProperties)
             {
+	            if (prop.IsCultureRecruiter()) { continue; }
+
                 MobileParty recruiter = prop.party;
                 bool done = recruiter.PartyTradeGold < costPerTransform;
                 debug("Recruiter is " + done);
@@ -569,21 +565,23 @@ namespace Recruiter
 	        mobileParty.SetMoveGoToSettlement(settlement);
 	        return mobileParty;
         }
-        
-         public class BannerlordMinorFactionRecruiterSaveDefiner : SaveableTypeDefiner
+
+        protected override bool RecruiterPreserveType(RecruiterProperties prop)
+        {
+	        return prop.IsMercenaryRecruiter();
+        }
+
+        public class BannerlordMinorFactionRecruiterSaveDefiner : SaveableTypeDefiner
          {
-             // Token: 0x06000043 RID: 67 RVA: 0x000034F1 File Offset: 0x000016F1
              public BannerlordMinorFactionRecruiterSaveDefiner() : base(91215130)
              {
              }
 
-             // Token: 0x06000044 RID: 68 RVA: 0x00003500 File Offset: 0x00001700
              // protected override void DefineClassTypes()
              // {
-             //     base.AddClassDefinition(typeof(RecruiterProperties), 2);
+             //     base.AddClassDefinition(typeof(RecruiterProperties), 1);
              // }
-
-             // Token: 0x06000045 RID: 69 RVA: 0x00003515 File Offset: 0x00001715
+             //
              // protected override void DefineContainerDefinitions()
              // {
              //     base.ConstructContainerDefinition(typeof(List<RecruiterProperties>));
