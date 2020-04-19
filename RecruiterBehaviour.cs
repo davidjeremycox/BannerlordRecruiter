@@ -23,16 +23,105 @@ namespace Recruiter
 	// Original recruiter
     class RecruiterBehaviour : RecruiterAbstractBehaviour
     {
-	    
-	    public override void OnDailyAITick()
+	    private void OnSessionLaunched(CampaignGameStarter obj)
+		{
+			this.trackRecruiters();
+			try
+			{
+				this.AddRecruiterMenu(obj);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show("Something screwed up in adding patrol menu. " + ex.ToString());
+			}
+			try
+			{
+				this.AddPatrolDialog(obj);
+			}
+			catch (Exception ex2)
+			{
+				MessageBox.Show("Something screwed up in adding patrol dialog. " + ex2.ToString());
+			}
+		}
+
+	    public void AddPatrolDialog(CampaignGameStarter obj)
 	    {
-		    foreach (RecruiterProperties prop in recruiterProperties)
+		    obj.AddDialogLine("mod_recruiter_talk_start", "start", "mod_recruiter_talk", "Hello my lord. What do you need us to do?", new ConversationSentence.OnConditionDelegate(this.patrol_talk_start_on_conditional), null, 100, null);
+		    obj.AddPlayerLine("mod_recruiter_donate_troops", "mod_recruiter_talk", "mod_recruiter_after_donate", "Donate Troops", null, new ConversationSentence.OnConsequenceDelegate(this.conversation_patrol_donate_troops_on_consequence), 100, null, null);
+		    obj.AddPlayerLine("mod_recruiter_disband", "mod_recruiter_talk", "close_window", "Disband.", null, new ConversationSentence.OnConsequenceDelegate(this.conversation_patrol_disband_on_consequence), 100, null, null);
+		    obj.AddPlayerLine("mod_recruiter_leave", "mod_recruiter_talk", "close_window", "Carry on, then. Farewell.", null, new ConversationSentence.OnConsequenceDelegate(this.conversation_patrol_leave_on_consequence), 100, null, null);
+		    obj.AddDialogLine("mod_recruiter_after_donate", "mod_recruiter_after_donate", "mod_recruiter_talk", "Anything else?", null, null, 100, null);
+		    //obj.AddPlayerLine("mod_leaderless_party_answer", "disbanding_leaderless_party_start_response", "close_window", "Disband now.", null, new ConversationSentence.OnConsequenceDelegate(this.conversation_patrol_disband_now_on_consquence), 100, null, null);
+	    }
+
+	    #region PatrolDialogMethods
+	    
+	    private void conversation_patrol_disband_now_on_consquence()
+	    {
+		    PartyBase encounteredParty = PlayerEncounter.EncounteredParty;
+		    encounteredParty.MobileParty.RemoveParty();
+		    PlayerEncounter.LeaveEncounter = true;
+	    }
+
+	    private void conversation_patrol_leave_on_consequence()
+	    {
+		    PlayerEncounter.LeaveEncounter = true;
+	    }
+
+	    private void conversation_patrol_disband_on_consequence()
+	    {
+		    PartyBase encounteredParty = PlayerEncounter.EncounteredParty;
+		    RecruiterProperties props = recruiterProperties.FirstOrDefault(prop => prop.party == encounteredParty.MobileParty);
+
+		    if(props != null)
 		    {
-			    if (prop.party.Food <= 3f)
+			    recruiterProperties.Remove(props);
+			    encounteredParty.MobileParty.RemoveParty();
+			    PlayerEncounter.LeaveEncounter = true;
+		    }
+	    }
+
+	    private void conversation_patrol_donate_troops_on_consequence()
+	    {
+		    PartyBase encounteredParty = PlayerEncounter.EncounteredParty;
+		    PartyScreenManager.OpenScreenAsDonateTroops(encounteredParty.MobileParty);
+	    }
+
+	    private bool patrol_talk_start_on_conditional()
+	    {
+		    PartyBase encounteredParty = PlayerEncounter.EncounteredParty;
+		    bool result;
+		    try
+		    {
+			    bool flag = PlayerEncounter.Current != null && Campaign.Current.CurrentConversationContext == ConversationContext.PartyEncounter && encounteredParty.IsMobile && encounteredParty.Name.Contains("Recruiter") && encounteredParty.IsActive && encounteredParty.MobileParty.HomeSettlement.OwnerClan == Clan.PlayerClan;
+			    if (flag)
 			    {
-				    this.generateFood(prop.party);
+				    result = true;
+			    }
+			    else
+			    {
+				    result = false;
 			    }
 		    }
+		    catch (Exception e)
+		    {
+			    MessageBox.Show(e.ToString());
+			    result = false;
+		    }
+		    return result;
+	    }
+
+	    #endregion
+
+	    private void OnDailyAITick()
+		{
+			foreach (RecruiterProperties prop in recruiterProperties)
+			{
+				if (prop.party.Food <= 3f)
+			{
+					this.generateFood(prop.party);
+				}
+			}
 
 	    }
 	    
@@ -46,7 +135,7 @@ namespace Recruiter
 				if (recruiter.HomeSettlement == null)
 				{
 					toBeDeleted.Add(prop);
-					break;
+					continue;
 				}
 				if (recruiter.PartyTradeGold < 20)
 				{
@@ -108,9 +197,9 @@ namespace Recruiter
 					if (closestWithRecruits == null)
 					{
 						recruiter.SetMoveGoToSettlement(recruiter.HomeSettlement);
-						return;
+						continue;
 					}
-					recruiter.SetMoveGoToSettlement(findNearestSettlementWithRecruitableRecruits(recruiter));
+					recruiter.SetMoveGoToSettlement(closestWithRecruits);
 				}
 			}
 
@@ -226,6 +315,26 @@ namespace Recruiter
 				} 
 			}
 		}
+		
+		public override void SyncData(IDataStore dataStore)
+		{
+			//List<MobileParty> allRecruitersLegacy = new List<MobileParty>();
+			//dataStore.SyncData<List<MobileParty>>("allRecruiters", ref allRecruitersLegacy);
+			//dataStore.SyncData<Dictionary<MobileParty, RecruiterProperties>>("allRecruitersToProperties", ref allRecruitersToProperties);
+
+			//foreach (MobileParty recruiter in allRecruitersLegacy)
+			//{
+			//	if(!allRecruitersToProperties.ContainsKey(recruiter))
+			//	{
+			//		allRecruitersToProperties.Add(recruiter, new RecruiterProperties());
+			//	}
+			//}
+			dataStore.SyncData<List<RecruiterProperties>>("recruiterProperties", ref recruiterProperties);
+			if(recruiterProperties == null)
+			{
+				recruiterProperties = new List<RecruiterProperties>();
+			}
+		}
 
 		public List<CultureObject> getPossibleCultures()
 		{
@@ -262,7 +371,13 @@ namespace Recruiter
 				obj.AddGameMenuOption("recruiter_culture_menu", "recruiter_" + culture.GetName().ToString(), culture.GetName().ToString(),
 					delegate (MenuCallbackArgs args)
 				{
-					return Settlement.All.Count(settlement => settlement.Culture == culture && settlement.OwnerClan != null && !settlement.OwnerClan.IsAtWarWith(Hero.MainHero.Clan)) > 0;
+					return Settlement.All.Count(settlement => settlement.Culture == culture && 
+					settlement.OwnerClan != null && 
+					!((settlement.OwnerClan.Kingdom != null && settlement.OwnerClan.Kingdom.IsAtWarWith(Hero.MainHero.Clan)) || 
+					settlement.OwnerClan.IsAtWarWith(Hero.MainHero.Clan) ||
+					(settlement.OwnerClan.Kingdom != null && Hero.MainHero.Clan.Kingdom != null && settlement.OwnerClan.Kingdom.IsAtWarWith(Hero.MainHero.Clan.Kingdom))
+					)
+					) > 0;
 				},
 				delegate (MenuCallbackArgs args)
 				{
@@ -297,17 +412,17 @@ namespace Recruiter
 				}
 				GameMenu.SwitchToMenu("castle");
 			}, false, -1, false);
-			obj.AddGameMenuOption("recruiter_pay_menu", "recruiter_pay_medium", "Pay 2500.", delegate (MenuCallbackArgs args)
+			obj.AddGameMenuOption("recruiter_pay_menu", "recruiter_pay_medium", "Pay 1500.", delegate (MenuCallbackArgs args)
 			{
 				args.optionLeaveType = GameMenuOption.LeaveType.Recruit;
 				string stringId = Settlement.CurrentSettlement.StringId;
-				int cost = 2500;
+				int cost = 1500;
 				bool flag = cost >= Hero.MainHero.Gold;
 				return !flag;
 			}, delegate (MenuCallbackArgs args)
 			{
 				string stringId = Settlement.CurrentSettlement.StringId;
-				int cost = 2500;
+				int cost = 1500;
 				bool flag = cost <= Hero.MainHero.Gold;
 				if (flag)
 				{
@@ -316,17 +431,17 @@ namespace Recruiter
 				}
 				GameMenu.SwitchToMenu("castle");
 			}, false, -1, false);
-			obj.AddGameMenuOption("recruiter_pay_menu", "recruiter_pay_large", "Pay 5000.", delegate (MenuCallbackArgs args)
+			obj.AddGameMenuOption("recruiter_pay_menu", "recruiter_pay_large", "Pay 3000.", delegate (MenuCallbackArgs args)
 			{
 				args.optionLeaveType = GameMenuOption.LeaveType.Recruit;
 				string stringId = Settlement.CurrentSettlement.StringId;
-				int cost = 5000;
+				int cost = 3000;
 				bool flag = cost >= Hero.MainHero.Gold;
 				return !flag;
 			}, delegate (MenuCallbackArgs args)
 			{
 				string stringId = Settlement.CurrentSettlement.StringId;
-				int cost = 5000;
+				int cost = 3000;
 				bool flag = cost <= Hero.MainHero.Gold;
 				if (flag)
 				{
@@ -352,24 +467,22 @@ namespace Recruiter
 			mobileParty.Aggressiveness = 0f;
 			props.party = mobileParty;
 			recruiterProperties.Add(props);
-			mobileParty.SetMoveGoToSettlement(findNearestSettlementWithRecruitableRecruits(mobileParty));
+			Settlement best = findNearestSettlementWithRecruitableRecruits(mobileParty);
+			if(best != null)
+				mobileParty.SetMoveGoToSettlement(best);
 			return mobileParty;
 		}
 		
 		public class BannerlordRecruiterSaveDefiner : SaveableTypeDefiner
 		{
-			// Token: 0x06000043 RID: 67 RVA: 0x000034F1 File Offset: 0x000016F1
 			public BannerlordRecruiterSaveDefiner() : base(91215129)
 			{
 			}
-
-			// Token: 0x06000044 RID: 68 RVA: 0x00003500 File Offset: 0x00001700
 			protected override void DefineClassTypes()
 			{
 				base.AddClassDefinition(typeof(RecruiterProperties), 1);
 			}
 
-			// Token: 0x06000045 RID: 69 RVA: 0x00003515 File Offset: 0x00001715
 			protected override void DefineContainerDefinitions()
 			{
 				base.ConstructContainerDefinition(typeof(List<RecruiterProperties>));
