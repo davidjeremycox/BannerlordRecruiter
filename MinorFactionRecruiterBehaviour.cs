@@ -3,6 +3,7 @@ using SandBox.GauntletUI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -51,13 +52,43 @@ namespace Recruiter
 	    private const int costPerTransform = 200;
 	    private const int nobleCostPerTransform = 300;
 	    private const int maxPerDay = 5;
+
+	    private List<CharacterObject> hardCodedBasicTroops = null;
+
+	    private List<CharacterObject> hardCodedEliteTroops = null;
+	    
+	    // Debug
+	    private const bool debugMode = true;
         protected override void RecruiterHourlyAi()
         {
 	        return;
         }
 
+        private void debug(String logString)
+        {
+	        if (debugMode)
+	        {
+		        InformationManager.DisplayMessage(new InformationMessage(logString, new Color(1f, 0f, 0f)));
+	        }
+        }
+        
+        private void debugSummarizeState()
+        {
+	        // Need to debug in combination with harmony enabled modules that prevent attaching a debugger
+	        debug("There are " + recruiterProperties.Count() + " tracked recruiters");
+	        int index = 0;
+	        foreach (RecruiterProperties prop in recruiterProperties)
+	        {
+		        debug("Recruiter " + index + " recruits " + prop.MinorFactionName + " and has " + prop.party.PartyTradeGold + " gold");
+		        debug("His home settlement is " + prop.party.HomeSettlement.Name);
+		        debug("His food is " + prop.party.Food);
+		        index += 1;
+	        }
+        }
+
         public override void OnDailyAITick()
         {
+	        debugSummarizeState();
 	        foreach (RecruiterProperties prop in recruiterProperties)
 	        {
 		        if (prop.party.Food <= 3f)
@@ -72,6 +103,7 @@ namespace Recruiter
             {
                 MobileParty recruiter = prop.party;
                 bool done = recruiter.PartyTradeGold < costPerTransform;
+                debug("Recruiter is " + done);
 
                 if (recruiter.CurrentSettlement == recruiter.HomeSettlement)
                 {
@@ -80,20 +112,28 @@ namespace Recruiter
 		                throw new Exception("Mercenary Recruiter Home Settlement is not a castle nor a town. How could this happen?");
 	                }
 
-	                int numRecruited = recruitMercenaries(prop, recruiter, recruiter.CurrentSettlement);
-	                int cost = GetTransformCost(prop, numRecruited);
-	                GiveGoldAction.ApplyForPartyToSettlement(recruiter.Party, recruiter.CurrentSettlement, cost);
+	                if (!done)
+	                {
+		                int numRecruited = recruitMercenaries(prop, recruiter, recruiter.CurrentSettlement);
+		                debug("Recruited " + numRecruited);
+		                int cost = GetTransformCost(prop, numRecruited);
+		                debug("Cost " + cost);
+		                GiveGoldAction.ApplyForPartyToSettlement(recruiter.Party, recruiter.CurrentSettlement, cost);
+	                }
 
 	                if (done)
 	                {
 		                MobileParty garrison = GetGarrison(recruiter.CurrentSettlement);
 		                if (garrison == null)
 		                {
+			                debug("Garrison is null - creating garrison");
 			                recruiter.CurrentSettlement.AddGarrisonParty();
 			                garrison = recruiter.CurrentSettlement.Parties.First(party => party.IsGarrison);
 		                }
+		                debug("Garrison: " + garrison.Name);
 
 		                int soldierCount = recruiter.MemberRoster.TotalManCount;
+		                debug("Soldier Count: " + soldierCount);
 		                foreach (TroopRosterElement rosterElement in recruiter.MemberRoster)
 		                {
 			                int healthy = rosterElement.Number - rosterElement.WoundedNumber;
@@ -108,6 +148,7 @@ namespace Recruiter
             
             foreach (RecruiterProperties prop in toBeDeleted)
             {
+	            debug("Removing " + prop.party.Name);
 	            recruiterProperties.Remove(prop);
             }
         }
@@ -231,15 +272,129 @@ namespace Recruiter
         }
         private bool IsEligible(RecruiterProperties prop, CharacterObject rosterElementCharacter)
         {
+	        // Looters are identified as Elite basic troops for the "looter" culture
+	        if (isNoble(prop.MinorFactionName) && isLooter(rosterElementCharacter))
+	        {
+		        return false;
+	        }
+	        // Adonnays Troop Changer potentially modifies the basic and elite basic troops from their Vanilla values
+	        // So check if it is running and use hardcoded lists if it is.
+	        if (isATCEnabled())
+	        {
+		        return isEligibleHardCoded(prop, rosterElementCharacter);
+	        }
+	        
 	        if (isNoble(prop.MinorFactionName))
 	        {
 		        // Nobles have a noble tier troop.
 		        return rosterElementCharacter == rosterElementCharacter.Culture.EliteBasicTroop;
 	        }
 	        // For now we allow any recruit to be transformed into any Minor Faction recruit
+	        debug("Checking for " + prop.party.Name + " candidate is " + rosterElementCharacter.Name + " basic is " + rosterElementCharacter.Culture.BasicTroop.Name);
 	        return rosterElementCharacter == rosterElementCharacter.Culture.BasicTroop;
         }
-        
+
+        private bool isLooter(CharacterObject rosterElementCharacter)
+        {
+	        CharacterObject obj = MBObjectManager.Instance.GetObject<CharacterObject>("looter");
+	        return obj == rosterElementCharacter;
+        }
+
+        private bool isEligibleHardCoded(RecruiterProperties prop, CharacterObject rosterElementCharacter)
+        {
+	        if (isNoble(prop.MinorFactionName))
+	        {
+		        return isEligibleNobleHardocded(prop, rosterElementCharacter);
+	        }
+
+	        return isEligibleBasicHardcoded(prop, rosterElementCharacter);
+        }
+
+        private bool isEligibleNobleHardocded(RecruiterProperties prop, CharacterObject rosterElementCharacter)
+        {
+	        if (hardCodedEliteTroops == null)
+	        {
+		        // Taken from unmodded spcultures.xml
+		        List<String> eliteTroopIds = new List<string>()
+		        {
+			        "imperial_vigla_recruit",
+			        "aserai_youth",
+			        "sturgian_warrior_son",
+			        "vlandian_squire",
+			        "battanian_highborn_youth",
+			        "khuzait_noble_son",
+			        "looter",
+			        "sea_raiders_raider",
+			        "mountain_bandits_raider",
+			        "forest_bandits_raider",
+			        "desert_bandits_raider",
+			        "steppe_bandits_raider",
+			        "guard"
+		        };
+		        hardCodedEliteTroops = new List<CharacterObject>();
+		        foreach (String eliteTroopId in eliteTroopIds)
+		        {
+			        CharacterObject obj = MBObjectManager.Instance.GetObject<CharacterObject>(eliteTroopId);
+			        if (obj != null)
+			        {
+				        hardCodedEliteTroops.Add(obj);
+			        }
+		        }
+	        }
+
+	        return hardCodedEliteTroops.Contains(rosterElementCharacter);
+        }
+
+        private bool isEligibleBasicHardcoded(RecruiterProperties prop, CharacterObject rosterElementCharacter)
+        {
+	        if (hardCodedBasicTroops == null)
+	        {
+		        // Taken from unmodded spcultures.xml
+		        List<String> basicTroopIds = new List<string>()
+		        {
+			        "imperial_recruit",
+			        "aserai_recruit",
+			        "sturgian_recruit",
+			        "vlandian_recruit",
+			        "battanian_volunteer",
+			        "khuzait_nomad",
+			        "looter",
+			        "sea_raiders_bandit",
+			        "mountain_bandits_bandit",
+			        "forest_bandits_bandit",
+			        "desert_bandits_bandit",
+			        "steppe_bandits_bandit",
+			        "guard"
+		        };
+		        hardCodedBasicTroops = new List<CharacterObject>();
+		        foreach (String basicTroopId in basicTroopIds)
+		        {
+			        CharacterObject obj = MBObjectManager.Instance.GetObject<CharacterObject>(basicTroopId);
+			        if (obj != null)
+			        {
+				        hardCodedBasicTroops.Add(obj);
+			        }
+		        }
+	        }
+
+	        return hardCodedBasicTroops.Contains(rosterElementCharacter);
+        }
+
+        private bool isATCEnabled()
+        {
+	        AppDomain current = AppDomain.CurrentDomain;
+	        Assembly[] assems = current.GetAssemblies();
+	        foreach (Assembly assem in assems)
+	        {
+		        if (assem.FullName == "AddonnaysTroopChanger")
+		        {
+			        return true;
+		        }
+	        }
+
+	        return false;
+        }
+
         private int GetTransformCost(RecruiterProperties prop, int numRecruited)
         {
 	        // Nobles are nobleman
