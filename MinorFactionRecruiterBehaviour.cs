@@ -20,6 +20,7 @@ using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.SaveSystem;
 using Recruiter;
+using TaleWorlds.GauntletUI;
 
 namespace Recruiter
 {
@@ -52,6 +53,8 @@ namespace Recruiter
 	    private const int costPerTransform = 200;
 	    private const int nobleCostPerTransform = 300;
 	    private const int maxPerDay = 5;
+	    
+	    private bool? storedATCEnabled = null;
 
 	    private List<CharacterObject> hardCodedBasicTroops = null;
 
@@ -202,16 +205,19 @@ namespace Recruiter
 	        MobileParty garrison = GetGarrison(currentSettlment);
 	        int numToRecruit = maxPerDay;
 
+	        debug("Garrison contains " + garrison.MemberRoster.Count + " different troop types");
 	        foreach (TroopRosterElement rosterElement in garrison.MemberRoster)
 	        {
 		        if (!IsEligible(prop, rosterElement.Character)) continue;
 		        int count = rosterElement.Number;
 		        if (count > numToRecruit)
 		        {
+			        debug("Identified " + count + " troops who are eligible. Will recruit " + numToRecruit + " of them");
 			        garrison.MemberRoster.AddToCounts(rosterElement.Character, -numToRecruit);
 			        recruiter.MemberRoster.AddToCounts(GetRecruited(prop), numToRecruit);
 			        return maxPerDay;
 		        }
+		        debug("Identified " + count + " troops who are eligible. Will recruit " + count + " of them");
 		        garrison.MemberRoster.AddToCounts(rosterElement.Character, -count);
 		        recruiter.MemberRoster.AddToCounts(GetRecruited(prop), count);
 		        numToRecruit -= count;
@@ -414,18 +420,23 @@ namespace Recruiter
 
         private bool isATCEnabled()
         {
-	        AppDomain current = AppDomain.CurrentDomain;
-	        Assembly[] assems = current.GetAssemblies();
-	        foreach (Assembly assem in assems)
+	        if (!storedATCEnabled.HasValue)
 	        {
-		        if (assem.FullName == "AddonnaysTroopChanger")
+		        storedATCEnabled = false;
+		        AppDomain current = AppDomain.CurrentDomain;
+		        Assembly[] assems = current.GetAssemblies();
+		        foreach (Assembly assem in assems)
 		        {
-			        return true;
+			        if (assem.FullName.Contains("AdonnaysTroopChanger"))
+			        {
+				        storedATCEnabled = true;
+			        }
 		        }
 	        }
 
-	        return false;
+	        return storedATCEnabled.Value;
         }
+    
 
         private int GetTransformCost(RecruiterProperties prop, int numRecruited)
         {
@@ -573,8 +584,7 @@ namespace Recruiter
 	        int numberOfCreated = defaultPartyTemplate.NumberOfCreated;
 	        defaultPartyTemplate.IncrementNumberOfCreated();
 	        MobileParty mobileParty = MBObjectManager.Instance.CreateObject<MobileParty>(settlement.OwnerClan.StringId + "_m_" + numberOfCreated);
-	        TextObject textObject = new TextObject("{RECRUITER_SETTLEMENT_NAME} Mercenary Recruiter", null);
-	        textObject.SetTextVariable("RECRUITER_SETTLEMENT_NAME", settlement.Name);
+	        TextObject textObject = new TextObject(props.MinorFactionName + " Mercenary Recruiter", null);
 	        mobileParty.InitializeMobileParty(textObject, defaultPartyTemplate, settlement.GatePosition, 0f, 0f, MobileParty.PartyTypeEnum.Default, 1);
 	        mobileParty.PartyTradeGold = cash;
 	        this.InitRecruiterParty(mobileParty, textObject, settlement.OwnerClan, settlement);
