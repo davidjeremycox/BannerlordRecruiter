@@ -27,5 +27,14 @@ namespace Recruiter
             get { return _minorFactionName; }
             set { _minorFactionName = value;  }
         }
+
+        public bool IsMercenaryRecruiter()
+        {
+            return _minorFactionName != null;
+        }
+        public bool IsCultureRecruiter()
+        {
+            return _searchCulture != null;
+        }
     }
 }

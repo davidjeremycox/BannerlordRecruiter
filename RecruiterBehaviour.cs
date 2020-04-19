@@ -72,11 +72,8 @@ namespace Recruiter
 
 			foreach (RecruiterProperties prop in recruiterProperties)
 			{
-				if (prop.MinorFactionName != null)
-				{
-					//This means it's a Minor Faction recruiter
-					continue;
-				}
+				if (prop.IsMercenaryRecruiter()) { continue; }
+
 				MobileParty recruiter = prop.party;
 				if (recruiter.HomeSettlement == null)
 				{
