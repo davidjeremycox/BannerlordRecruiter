@@ -101,6 +101,11 @@ namespace Recruiter
 
             foreach (RecruiterProperties prop in recruiterProperties)
             {
+	            if (prop.SearchCulture != null)
+	            {
+		            // This means it's a normal Recruiter
+		            continue;
+	            }
                 MobileParty recruiter = prop.party;
                 bool done = recruiter.PartyTradeGold < costPerTransform;
 
