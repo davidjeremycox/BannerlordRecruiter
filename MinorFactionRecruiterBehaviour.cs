@@ -384,7 +384,7 @@ namespace Recruiter
 	        if (hardCodedBasicTroops == null)
 	        {
 		        // Taken from unmodded spcultures.xml
-		        List<String> basicTroopIds = new List<string>()
+		        List<string> basicTroopIds = new List<string>()
 		        {
 			        "imperial_recruit",
 			        "aserai_recruit",
@@ -400,6 +400,7 @@ namespace Recruiter
 			        "steppe_bandits_bandit",
 			        "guard"
 		        };
+		        addExtraBasic(basicTroopIds);
 		        hardCodedBasicTroops = new List<CharacterObject>();
 		        foreach (String basicTroopId in basicTroopIds)
 		        {
@@ -412,6 +413,50 @@ namespace Recruiter
 	        }
 
 	        return hardCodedBasicTroops.Contains(rosterElementCharacter);
+        }
+
+        private void addExtraBasic(List<string> basicTroopIds)
+        {
+	        // Add in some tier 2 and tier 3 troops since villages produce a lot of these.
+	        List<string> tier2 = new List<string>()
+	        {
+		        "imperial_infantryman",
+		        "imperial_archer",
+		        "aserai_tribesman",
+		        "aserai_mameluke_soldier",
+		        "khuzait_tribal_warrior",
+		        "khuzait_footman",
+		        "vlandian_levy_crossbowman",
+		        "vlandian_footman",
+		        "sturgian_warrior",
+		        "sturgian_woodsman",
+		        "battanian_clanwarrior",
+		        "battanian_woodrunner"
+	        };
+	        List<string> tier3 = new List<string>()
+	        {
+		        "imperial_trained_infantryman",
+		        "imperial_trained_archer",
+		        "aserai_skirmisher",
+		        "aserai_footman",
+		        "aserai_mameluke_regular",
+		        "aserai_mameluke_axeman",
+		        "khuzait_hunter",
+		        "khuzait_spearman",
+		        "khuzait_raider",
+		        "khuzait_horseman",
+		        "vlandian_spearman",
+		        "vlandian_infantry",
+		        "vlandian_crossbowman",
+		        "sturgian_soldier",
+		        "sturgian_brigand",
+		        "sturgian_hunter",
+		        "battanian_trained_warrior",
+		        "battanian_picked_warrior",
+		        "battanian_scout"
+	        };
+	        basicTroopIds.AddRange(tier2);
+	        basicTroopIds.AddRange(tier3);
         }
 
         private bool isATCEnabled()
