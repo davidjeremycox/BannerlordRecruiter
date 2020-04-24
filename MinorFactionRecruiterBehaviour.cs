@@ -199,6 +199,10 @@ namespace Recruiter
         private int recruitMercenaries(RecruiterProperties prop, MobileParty recruiter, Settlement currentSettlment)
         {
 	        MobileParty garrison = GetGarrison(currentSettlment);
+	        if (garrison == null)
+	        {
+		        return 0;
+	        }
 	        int numToRecruit = maxPerDay;
 
 	        debug("Garrison contains " + garrison.MemberRoster.Count + " different troop types");
