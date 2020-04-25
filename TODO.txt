@@ -1,0 +1,5 @@
+﻿TESTING Change to compiler macro on debug function
+TODO Fix overrun case for mercenary recruiters where they hire more men then they should
+TODO Implement cultural restrictions on mercenary recruiters
+DONE Make other recruiter cost options actually work
+TODO Make recruiters greedy grab (meaning they try and grab all needed recruits immediately)
