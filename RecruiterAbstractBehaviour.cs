@@ -27,7 +27,11 @@ namespace Recruiter
         protected Random rand = new Random();
         protected List<RecruiterProperties> recruiterProperties = new List<RecruiterProperties>();
         // Debug
+        #if DEBUG
         protected const bool debugMode = true;
+        #else
+        protected const bool debugMode = false;
+        #endif
 
         private void OnSessionLaunched(CampaignGameStarter obj)
         {
@@ -70,10 +74,11 @@ namespace Recruiter
 
         protected void debug(String logString, Color messageColor)
         {
-            if (debugMode)
+            #if DEBUG
             {
                 InformationManager.DisplayMessage(new InformationMessage(logString, messageColor));
             }
+            #endif
         }
 
         protected void debug(String logString)
