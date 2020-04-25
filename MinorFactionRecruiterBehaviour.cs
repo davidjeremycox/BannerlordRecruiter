@@ -19,6 +19,7 @@ using TaleWorlds.Engine.Screens;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.SaveSystem;
+using TaleWorlds.ObjectSystem;
 using Recruiter;
 using TaleWorlds.GauntletUI;
 
@@ -567,65 +568,66 @@ namespace Recruiter
 			AddRecruitMenuOption(obj, payName, "minor_recruiter_pay_medium", 10, props);
 			AddRecruitMenuOption(obj, payName, "minor_recruiter_pay_large", 25, props);
 			*/
-			int numToBeRecruited = 5;
+			int numToBeRecruitedSmall = 5;
+			int numToBeRecruitedMedium = 10;
+			int numToBeRecruitedLarge = 25;
 			int effectiveCostPerTransform = costPerTransform;
 			if (isNoble(props.MinorFactionName))
 			{
 				effectiveCostPerTransform = nobleCostPerTransform;
 			}
-			int cost = numToBeRecruited * effectiveCostPerTransform;
-			obj.AddGameMenuOption(payName, "minor_recruiter_pay_small", "Try to Recruit " + numToBeRecruited + " for " + cost + " Denars", delegate (MenuCallbackArgs args)
+			int costSmall = numToBeRecruitedSmall * effectiveCostPerTransform;
+			int costMedium = numToBeRecruitedMedium * effectiveCostPerTransform;
+			int costLarge = numToBeRecruitedLarge * effectiveCostPerTransform;
+			
+			obj.AddGameMenuOption(payName, "minor_recruiter_pay_small", "Try to Recruit " + numToBeRecruitedSmall + " for " + costSmall + " Denars", delegate (MenuCallbackArgs args)
 			{
 				args.optionLeaveType = GameMenuOption.LeaveType.Recruit;
 				string stringId = Settlement.CurrentSettlement.StringId;
-				bool flag = cost >= Hero.MainHero.Gold;
+				bool flag = costSmall >= Hero.MainHero.Gold;
 				return !flag;
 			}, delegate (MenuCallbackArgs args)
 			{
 				string stringId = Settlement.CurrentSettlement.StringId;
-				bool flag = cost <= Hero.MainHero.Gold;
+				bool flag = costSmall <= Hero.MainHero.Gold;
 				if (flag)
 				{
-					GiveGoldAction.ApplyForCharacterToSettlement(Hero.MainHero, Settlement.CurrentSettlement, cost, false);
-					MobileParty item = this.spawnRecruiter(Settlement.CurrentSettlement, cost, props);
+					GiveGoldAction.ApplyForCharacterToSettlement(Hero.MainHero, Settlement.CurrentSettlement, costSmall, false);
+					MobileParty item = this.spawnRecruiter(Settlement.CurrentSettlement, costSmall, props);
 				}
 				GameMenu.SwitchToMenu("castle");
 			}, false, -1, false);
-	        numToBeRecruited = 10;
-	        cost = numToBeRecruited * effectiveCostPerTransform;
-			obj.AddGameMenuOption(payName, "minor_recruiter_pay_medium", "Try to Recruit " + numToBeRecruited + " for " + cost + " Denars", delegate (MenuCallbackArgs args)
+			obj.AddGameMenuOption(payName, "minor_recruiter_pay_medium", "Try to Recruit " + numToBeRecruitedMedium + " for " + costMedium + " Denars", delegate (MenuCallbackArgs args)
 			{
 				args.optionLeaveType = GameMenuOption.LeaveType.Recruit;
 				string stringId = Settlement.CurrentSettlement.StringId;
-				bool flag = cost >= Hero.MainHero.Gold;
+				bool flag = costMedium >= Hero.MainHero.Gold;
 				return !flag;
 			}, delegate (MenuCallbackArgs args)
 			{
 				string stringId = Settlement.CurrentSettlement.StringId;
-				bool flag = cost <= Hero.MainHero.Gold;
+				bool flag = costMedium <= Hero.MainHero.Gold;
 				if (flag)
 				{
-					GiveGoldAction.ApplyForCharacterToSettlement(Hero.MainHero, Settlement.CurrentSettlement, cost, false);
-					MobileParty item = this.spawnRecruiter(Settlement.CurrentSettlement, cost, props);
+					GiveGoldAction.ApplyForCharacterToSettlement(Hero.MainHero, Settlement.CurrentSettlement, costMedium, false);
+					MobileParty item = this.spawnRecruiter(Settlement.CurrentSettlement, costMedium, props);
 				}
 				GameMenu.SwitchToMenu("castle");
 			}, false, -1, false);	
-			numToBeRecruited = 25;
-			cost = numToBeRecruited * effectiveCostPerTransform;
-			obj.AddGameMenuOption(payName, "minor_recruiter_pay_large", "Try to Recruit " + numToBeRecruited + " for " + cost + " Denars", delegate (MenuCallbackArgs args)
+			obj.AddGameMenuOption(payName, "minor_recruiter_pay_large", "Try to Recruit " + numToBeRecruitedLarge + " for " + costLarge + " Denars", delegate (MenuCallbackArgs args)
 			{
 				args.optionLeaveType = GameMenuOption.LeaveType.Recruit;
 				string stringId = Settlement.CurrentSettlement.StringId;
-				bool flag = cost >= Hero.MainHero.Gold;
+				bool flag = costLarge >= Hero.MainHero.Gold;
 				return !flag;
 			}, delegate (MenuCallbackArgs args)
 			{
 				string stringId = Settlement.CurrentSettlement.StringId;
-				bool flag = cost <= Hero.MainHero.Gold;
+				bool flag = costLarge <= Hero.MainHero.Gold;
 				if (flag)
 				{
-					GiveGoldAction.ApplyForCharacterToSettlement(Hero.MainHero, Settlement.CurrentSettlement, cost, false);
-					MobileParty item = this.spawnRecruiter(Settlement.CurrentSettlement, cost, props);
+					GiveGoldAction.ApplyForCharacterToSettlement(Hero.MainHero, Settlement.CurrentSettlement, costLarge, false);
+					MobileParty item = this.spawnRecruiter(Settlement.CurrentSettlement, costLarge, props);
 				}
 				GameMenu.SwitchToMenu("castle");
 			}, false, -1, false);				

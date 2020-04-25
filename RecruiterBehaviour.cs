@@ -17,6 +17,7 @@ using TaleWorlds.Engine.Screens;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.SaveSystem;
+using TaleWorlds.ObjectSystem;
 
 namespace Recruiter
 {
