@@ -116,6 +116,9 @@ namespace Recruiter
 	        }
 	        return result;
         }
+
+        #region  ONDAILYAI
+        
         public override void OnDailyAITick()
         {
 	        debugSummarizeState();
@@ -148,20 +151,15 @@ namespace Recruiter
 	                {
 		                int numRecruited = recruitMercenaries(prop, recruiter, recruiter.CurrentSettlement);
 		                debug("Recruited " + numRecruited);
-		                int cost = GetTransformCost(prop, numRecruited);
-		                debug("Cost " + cost);
-		                GiveGoldAction.ApplyForPartyToSettlement(recruiter.Party, recruiter.CurrentSettlement, cost);
+		                int numTransformed = TransformMercenaries(prop, recruiter);
+		                debug("Transformed: " + numTransformed);
 	                }
 
+	                // Recompute done to account for the gold we just spent
+	                done = recruiter.PartyTradeGold < costPerTransform;
 	                if (done)
 	                {
-		                MobileParty garrison = GetGarrison(recruiter.CurrentSettlement);
-		                if (garrison == null)
-		                {
-			                debug("Garrison is null - creating garrison");
-			                recruiter.CurrentSettlement.AddGarrisonParty();
-			                garrison = recruiter.CurrentSettlement.Parties.First(party => party.IsGarrison);
-		                }
+		                MobileParty garrison = GetGarrisonToAdd(recruiter.CurrentSettlement, recruiter);
 		                debug("Garrison: " + garrison.Name);
 
 		                int soldierCount = recruiter.MemberRoster.TotalManCount;
@@ -184,7 +182,72 @@ namespace Recruiter
 	            recruiterProperties.Remove(prop);
             }
         }
-        
+
+        private int TransformMercenaries(RecruiterProperties prop, MobileParty recruiter)
+        {
+	        if (recruiter.MemberRoster.TotalRegulars <= 1)
+	        {
+		        return 0;
+	        }
+	        int numToTransform = maxPerDay;
+	        int maxTransform = maxPerDay;
+	        if (recruiter.MemberRoster.TotalRegulars <= numToTransform)
+	        {
+		        numToTransform = recruiter.MemberRoster.TotalRegulars - 1;
+		        maxTransform = numToTransform;
+	        }
+	        
+	        MobileParty garrison = GetGarrisonToAdd(recruiter.CurrentSettlement, recruiter);
+	        foreach (TroopRosterElement rosterElement in recruiter.MemberRoster)
+	        {
+		        if (IsEligible(prop, rosterElement.Character))
+		        {
+			        int healthy = rosterElement.Number - rosterElement.WoundedNumber;
+			        if (healthy <= numToTransform)
+			        {
+				        garrison.MemberRoster.AddToCounts(GetRecruited(prop), healthy, false);
+				        recruiter.MemberRoster.AddToCounts(rosterElement.Character, -healthy);
+				        numToTransform -= healthy;
+			        }
+			        else
+			        {
+				        garrison.MemberRoster.AddToCounts(GetRecruited(prop), numToTransform, false);
+				        recruiter.MemberRoster.AddToCounts(rosterElement.Character, -numToTransform);
+				        numToTransform = 0;
+			        }
+			        
+
+			        if (rosterElement.WoundedNumber <= numToTransform & rosterElement.WoundedNumber > 0)
+			        {
+				        garrison.MemberRoster.AddToCounts(GetRecruited(prop), 0, false, rosterElement.WoundedNumber);
+				        recruiter.MemberRoster.AddToCounts(rosterElement.Character, 0, false, -rosterElement.WoundedNumber);
+				        numToTransform -= rosterElement.WoundedNumber;
+			        }
+		        }
+
+		        if (numToTransform <= 0)
+		        {
+			        break;
+		        }
+	        }
+	        int cost = GetTransformCost(prop, maxPerDay - numToTransform);
+	        debug("Cost " + cost);
+	        GiveGoldAction.ApplyForPartyToSettlement(recruiter.Party, recruiter.CurrentSettlement, cost);
+	        return maxTransform - numToTransform;
+        }
+
+        private MobileParty GetGarrisonToAdd(Settlement settlement, MobileParty recruiter)
+        {
+	        MobileParty garrison = GetGarrison(recruiter.CurrentSettlement);
+	        if (garrison == null)
+	        {
+		        debug("Garrison is null - creating garrison");
+		        recruiter.CurrentSettlement.AddGarrisonParty();
+		        garrison = recruiter.CurrentSettlement.Parties.First(party => party.IsGarrison);
+	        }
+
+	        return garrison;
+        }
         private MobileParty GetGarrison(Settlement settlement)
         {
 	        foreach (MobileParty party in settlement.Parties)
@@ -197,16 +260,31 @@ namespace Recruiter
 
 	        return null;
         }
-        private int recruitMercenaries(RecruiterProperties prop, MobileParty recruiter, Settlement currentSettlment)
-        {
-	        MobileParty garrison = GetGarrison(currentSettlment);
-	        if (garrison == null)
-	        {
-		        return 0;
-	        }
-	        int numToRecruit = maxPerDay;
 
+        private int NumRecruitsNeeded(RecruiterProperties prop, MobileParty recruiter)
+        {
+	        int numNeeded = recruiter.PartyTradeGold / costPerTransform;
+	        int numAlreadyFound = 0;
+
+	        foreach (TroopRosterElement rosterElement in recruiter.MemberRoster)
+	        {
+		        if (IsEligible(prop, rosterElement.Character))
+		        {
+			        numAlreadyFound += rosterElement.Number;
+		        }
+	        }
+
+	        if (recruiter.MemberRoster.TotalRegulars == 1 & numAlreadyFound == 1)
+	        {
+		        //Recruiter himself is eligible for transformation
+		        numAlreadyFound = 0;
+	        }
+	        return numNeeded - numAlreadyFound;
+        }
+        private int AddFromGarrison(RecruiterProperties prop, MobileParty recruiter, MobileParty garrison, int numToRecruit)
+        {
 	        debug("Garrison contains " + garrison.MemberRoster.Count + " different troop types");
+	        int recruitedCount = 0;
 	        foreach (TroopRosterElement rosterElement in garrison.MemberRoster)
 	        {
 		        if (!IsEligible(prop, rosterElement.Character)) continue;
@@ -215,56 +293,88 @@ namespace Recruiter
 		        {
 			        debug("Identified " + count + " troops who are eligible. Will recruit " + numToRecruit + " of them");
 			        garrison.MemberRoster.AddToCounts(rosterElement.Character, -numToRecruit);
-			        recruiter.MemberRoster.AddToCounts(GetRecruited(prop), numToRecruit);
-			        return maxPerDay;
+			        recruiter.MemberRoster.AddToCounts(rosterElement.Character, numToRecruit);
+			        return numToRecruit;
 		        }
 		        debug("Identified " + count + " troops who are eligible. Will recruit " + count + " of them");
 		        garrison.MemberRoster.AddToCounts(rosterElement.Character, -count);
-		        recruiter.MemberRoster.AddToCounts(GetRecruited(prop), count);
+		        recruiter.MemberRoster.AddToCounts(rosterElement.Character, count);
+		        recruitedCount += count;
 		        numToRecruit -= count;
 	        }
 
-	        if (numToRecruit > 0)
+	        return recruitedCount;
+        }
+
+        private int AddFromSettlement(RecruiterProperties prop, MobileParty recruiter, Settlement currentSettlement, int numToRecruit)
+        {
+	        DefaultPartyWageModel wageModel = new DefaultPartyWageModel();
+	        int addedFromSettlement = 0;
+	        // Try and recruit from notables
+	        foreach (Hero notable in currentSettlement.Notables)
 	        {
-		        DefaultPartyWageModel wageModel = new DefaultPartyWageModel();
-		        // Try and recruit from notables
-		        foreach (Hero notable in currentSettlment.Notables)
+		        List<CharacterObject> recruitables = HeroHelper.GetVolunteerTroopsOfHeroForRecruitment(notable);
+		        for (int recruitableIndex = 0; recruitableIndex < recruitables.Count; recruitableIndex++)
 		        {
-			        List<CharacterObject> recruitables = HeroHelper.GetVolunteerTroopsOfHeroForRecruitment(notable);
-			        for (int recruitableIndex = 0; recruitableIndex < recruitables.Count; recruitableIndex++)
+			        CharacterObject recruitable = recruitables[recruitableIndex];
+			        if (recruitable != null && hasSufficientRelationsship(notable, recruitableIndex)
+			                                && IsEligible(prop, recruitable)
+			                                && numToRecruit > 0)
 			        {
-				        CharacterObject recruitable = recruitables[recruitableIndex];
-				        if (recruitable != null && hasSufficientRelationsship(notable, recruitableIndex)
-				                                && IsEligible(prop, recruitable)
-				                                && numToRecruit > 0)
+				        int recruitCost = wageModel.GetTroopRecruitmentCost(recruitable, Hero.MainHero);
+
+				        if (recruitCost + costPerTransform > recruiter.PartyTradeGold)
 				        {
-					        int recruitCost = wageModel.GetTroopRecruitmentCost(recruitable, Hero.MainHero);
+					        continue;
+				        }
 
-					        if (recruitCost > recruiter.PartyTradeGold)
+				        recruiter.MemberRoster.AddToCounts(recruitable, 1);
+				        numToRecruit -= 1;
+				        addedFromSettlement += 1;
+
+				        GiveGoldAction.ApplyForPartyToSettlement(recruiter.Party, currentSettlement, recruitCost);
+				        for (int i = 0; i < notable.VolunteerTypes.Length; i++)
+				        {
+					        if (recruitable == notable.VolunteerTypes[i])
 					        {
-						        continue;
-					        }
-
-					        recruiter.MemberRoster.AddToCounts(GetRecruited(prop), 1);
-					        numToRecruit -= 1;
-
-					        GiveGoldAction.ApplyForPartyToSettlement(recruiter.Party, currentSettlment, recruitCost);
-					        for (int i = 0; i < notable.VolunteerTypes.Length; i++)
-					        {
-						        if (recruitable == notable.VolunteerTypes[i])
-						        {
-							        notable.VolunteerTypes[i] = null;
-							        break;
-						        }
+						        notable.VolunteerTypes[i] = null;
+						        break;
 					        }
 				        }
 			        }
 		        }
 	        }
 
-	        return maxPerDay - numToRecruit;
+	        return addedFromSettlement;
+        }
+        private int recruitMercenaries(RecruiterProperties prop, MobileParty recruiter, Settlement currentSettlement)
+        {
+	        MobileParty garrison = GetGarrison(currentSettlement);
+	        if (garrison == null)
+	        {
+		        return 0;
+	        }
+
+	        int numToRecruit = NumRecruitsNeeded(prop, recruiter);
+	        if (numToRecruit <= 0)
+	        {
+		        return 0;
+	        }
+
+	        int addedFromGarrison = AddFromGarrison(prop, recruiter, garrison, numToRecruit);
+	        numToRecruit -= addedFromGarrison;
+
+	        int addedFromSettlement = 0;
+	        if (numToRecruit > 0)
+	        {
+		        addedFromSettlement = AddFromSettlement(prop, recruiter, currentSettlement, numToRecruit);
+		        numToRecruit -= addedFromSettlement;
+	        }
+
+	        return addedFromSettlement + addedFromGarrison;
         }
 
+        #endregion
         private CharacterObject GetRecruited(RecruiterProperties prop)
         {
 	        String minorFaction = prop.MinorFactionName;
@@ -329,7 +439,7 @@ namespace Recruiter
 		        return rosterElementCharacter == rosterElementCharacter.Culture.EliteBasicTroop;
 	        }
 	        // For now we allow any recruit to be transformed into any Minor Faction recruit
-	        debug("Checking for " + prop.party.Name + " candidate is " + rosterElementCharacter.Name + " basic is " + rosterElementCharacter.Culture.BasicTroop.Name);
+	        //debug("Checking for " + prop.party.Name + " candidate is " + rosterElementCharacter.Name + " basic is " + rosterElementCharacter.Culture.BasicTroop.Name);
 	        return rosterElementCharacter == rosterElementCharacter.Culture.BasicTroop;
         }
 
