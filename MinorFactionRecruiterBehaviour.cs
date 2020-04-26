@@ -169,7 +169,8 @@ namespace Recruiter
 			                int healthy = rosterElement.Number - rosterElement.WoundedNumber;
 			                garrison.MemberRoster.AddToCounts(rosterElement.Character, healthy, false, rosterElement.WoundedNumber);
 		                }
-		                InformationManager.DisplayMessage(new InformationMessage("Your mercenary recruiter brought " + (soldierCount - 1) + " soldiers to " + recruiter.HomeSettlement + ".", new Color(0f, 1f, 0f)));
+		                // InformationManager.DisplayMessage(new InformationMessage("Your mercenary recruiter brought " + (soldierCount - 1) + " soldiers to " + recruiter.HomeSettlement + ".", new Color(0f, 1f, 0f)));
+		                InformationManager.DisplayMessage(new InformationMessage("Your mercenary recruiter brought finished recruiting " + prop.MinorFactionName + " at " + recruiter.HomeSettlement + ".", new Color(0f, 1f, 0f)));
 		                toBeDeleted.Add(prop);
 		                recruiter.RemoveParty();
 	                }
@@ -198,6 +199,8 @@ namespace Recruiter
 	        }
 	        
 	        MobileParty garrison = GetGarrisonToAdd(recruiter.CurrentSettlement, recruiter);
+	        List<Tuple<CharacterObject, int>> transformedChars = new List<Tuple<CharacterObject, int>>(); 
+	        List<Tuple<CharacterObject, int>> woundedChars = new List<Tuple<CharacterObject, int>>(); 
 	        foreach (TroopRosterElement rosterElement in recruiter.MemberRoster)
 	        {
 		        if (IsEligible(prop, rosterElement.Character))
@@ -206,12 +209,15 @@ namespace Recruiter
 			        if (healthy <= numToTransform)
 			        {
 				        garrison.MemberRoster.AddToCounts(GetRecruited(prop), healthy, false);
-				        recruiter.MemberRoster.AddToCounts(rosterElement.Character, -healthy);
+				        transformedChars.Add(new Tuple<CharacterObject, int>(rosterElement.Character, healthy));
+				        //We can't do directly manipulate this here as we are currently iterating over the member roster
+				        // recruiter.MemberRoster.AddToCounts(rosterElement.Character, -healthy);
 				        numToTransform -= healthy;
 			        }
 			        else
 			        {
 				        garrison.MemberRoster.AddToCounts(GetRecruited(prop), numToTransform, false);
+				        // transformedChars.Add(new Tuple<CharacterObject, int>(rosterElement.Character, numToTransform));
 				        recruiter.MemberRoster.AddToCounts(rosterElement.Character, -numToTransform);
 				        numToTransform = 0;
 			        }
@@ -220,7 +226,13 @@ namespace Recruiter
 			        if (rosterElement.WoundedNumber <= numToTransform & rosterElement.WoundedNumber > 0)
 			        {
 				        garrison.MemberRoster.AddToCounts(GetRecruited(prop), 0, false, rosterElement.WoundedNumber);
-				        recruiter.MemberRoster.AddToCounts(rosterElement.Character, 0, false, -rosterElement.WoundedNumber);
+				        woundedChars.Add(new Tuple<CharacterObject, int>(rosterElement.Character, rosterElement.WoundedNumber));
+				        // recruiter.MemberRoster.AddToCounts(rosterElement.Character, 0, false, -rosterElement.WoundedNumber);
+				        numToTransform -= rosterElement.WoundedNumber;
+			        } else if (rosterElement.WoundedNumber > 0)
+			        {
+				        garrison.MemberRoster.AddToCounts(GetRecruited(prop), 0, false, numToTransform);
+				        recruiter.MemberRoster.AddToCounts(rosterElement.Character, 0, false, -numToTransform);
 				        numToTransform -= rosterElement.WoundedNumber;
 			        }
 		        }
@@ -230,10 +242,21 @@ namespace Recruiter
 			        break;
 		        }
 	        }
-	        int cost = GetTransformCost(prop, maxPerDay - numToTransform);
+
+	        foreach (Tuple<CharacterObject, int> listElement in transformedChars)
+	        {
+		        garrison.MemberRoster.AddToCounts(listElement.Item1, listElement.Item2, false);
+	        }
+
+	        foreach (Tuple<CharacterObject, int> listElement in woundedChars)
+	        {
+		        garrison.MemberRoster.AddToCounts(listElement.Item1, 0, false, listElement.Item2);
+	        }
+	        int numTransformed = maxTransform - numToTransform;
+	        int cost = GetTransformCost(prop, numTransformed);
 	        debug("Cost " + cost);
 	        GiveGoldAction.ApplyForPartyToSettlement(recruiter.Party, recruiter.CurrentSettlement, cost);
-	        return maxTransform - numToTransform;
+	        return numTransformed;
         }
 
         private MobileParty GetGarrisonToAdd(Settlement settlement, MobileParty recruiter)
